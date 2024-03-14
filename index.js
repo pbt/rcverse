@@ -407,12 +407,12 @@ app.get("/sse", async function (req, res) {
 	res.flushHeaders();
 
 	// Tell the client to retry every 10 seconds if connectivity is lost
-	res.write("retry: 10000\n\n");
+	res.write("\nretry: 10000\n\n");
 
 	const listener = (participantName, action, roomName) => {
 		res.write(`event:room-update-${roomName}\n`);
 		res.write(
-			`data: ${Room(
+			Room(
 				transformInternalsToWhatTheSingleRoomHtmlRendererNeeds({
 					roomName,
 					roomHref: zoomRoomsByName[roomName].href,
@@ -420,8 +420,12 @@ app.get("/sse", async function (req, res) {
 					roomNameToParticipantNames,
 					participantNameToEntity,
 				}),
-			).replaceAll("\n", "")}\n\n`,
+			)
+				.split("\n")
+				.map((line) => `data:${line}`)
+				.join("\n"),
 		);
+		res.write("\n\n"); // Must end with `\n\n`
 	};
 	// TODO: For some reason this code stops the server from exiting clearly on Control-C (Signal Interrupt)
 	//       Maybe we can listen for the event of SIG INT and manually call res.end on every res that still has an event emitter?
